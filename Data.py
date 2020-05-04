@@ -10,14 +10,16 @@ class Data:
         self.file = open(self.file_name, "a+")
         self.URL = "https://www.imdb.com/chart/top/?ref_=nv_mv_250"
 
-    def update_data(self):
+    def restore_data(self):
         """Updates the movies in the csv file."""
         response = requests.get(self.URL)
         # print(response.status_code)
 
         self.table_soup = BeautifulSoup(response.content, "html.parser").find(class_="lister-list")
         self.rows = self.table_soup.find_all("tr")
-        self.file.truncate()
+        self.file.close()
+
+        self.file = open(self.file_name, "w")
 
         for self.row in self.rows:
             serial_num = self.row.find(class_="titleColumn").get_text().split()[0][0:-1]
@@ -29,6 +31,8 @@ class Data:
             line = f'"{serial_num}","{name}","{link}","{movie_release_year}","{rating}"\n'
             self.file.write(line)
 
+        self.file.close()
+
     def close_file(self):
         """Close the csv file and saves the data."""
         self.file.close()
@@ -36,5 +40,5 @@ class Data:
 
 if __name__ == "__main__":
     obj = Data()
-    obj.update_data()
+    obj.restore_data()
     obj.close_file()
