@@ -11,7 +11,7 @@ class Data:
         self.URL = "https://www.imdb.com/chart/top/?ref_=nv_mv_250"
 
     def restore_data(self):
-        """Updates the movies in the csv file."""
+        """Updates the movies in the csv file and deletes old data.."""
         response = requests.get(self.URL)
         # print(response.status_code)
 
@@ -33,12 +33,7 @@ class Data:
 
         self.file.close()
 
-    def close_file(self):
-        """Close the csv file and saves the data."""
-        self.file.close()
-
 
 if __name__ == "__main__":
     obj = Data()
     obj.restore_data()
-    obj.close_file()
