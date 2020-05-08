@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
+import datetime
 import requests
+import sys
 
 
 class Data:
@@ -21,170 +23,75 @@ class Data:
         self.rows = self.table_soup.find_all("tr")
 
         self.file = open(self.file_name, "w")
+        self.file.write("Name,Summary,IMDb Rating,Age Appropriate,Duration,Genre,Release Year,Director,Writers,Actor:Character\n")
 
-        for self.row in self.rows:
-            serial_num = self.row.find(class_="titleColumn").get_text().split()[0][0:-1]
-            name = self.row.find(class_="titleColumn").a.get_text().strip().replace(",", "_")
-            link = f"https://www.imdb.com/{self.row.a['href']}"
-            movie_release_year = self.row.find(class_="titleColumn").get_text().split()[-1][1:-1]
+        for i, self.row in enumerate(self.rows[:2]):
+
+            name = self.row.find(class_="titleColumn").a.get_text().strip()
+            link = f"https://www.imdb.com/{self.row.a['href']}".split("?")[0]
             rating = self.row.find(class_="ratingColumn imdbRating").get_text().strip()
 
-            line = f'"{serial_num}","{name}","{link}","{movie_release_year}","{rating}"\n'
+            movie_response = requests.get(link, headers=self.headers)
+            new_page_soup = BeautifulSoup(movie_response.content, "html.parser")
+
+            title_list = new_page_soup.find(class_="subtext").get_text().split("|")
+
+            try:
+                release_year = title_list[3].strip()
+            except IndexError:
+                release_year = title_list[2].strip()
+                age_restriction = "Unknown"
+                duration = title_list[0].strip()
+                genre_list = title_list[1].strip().split(",")
+                genre = ""
+                for genre_var in genre_list:
+                    genre += f"{genre_var.strip()},"
+                genre = genre[:-1]
+            else:
+                age_restriction = title_list[0].strip()
+                duration = title_list[1].strip()
+                genre_list = title_list[2].strip().split(",")
+                genre = ""
+                for genre_var in genre_list:
+                    genre += f"{genre_var.strip()},"
+                genre = genre[:-1]
+
+            plot = new_page_soup.find(class_="plot_summary")
+
+            desc = plot.find(class_="summary_text").get_text().strip()
+
+            credit_box = plot.find_all(class_="credit_summary_item")
+            director = credit_box[0].a.get_text()
+            writers = credit_box[1].find_all("a")
+
+            for index, writer in enumerate(writers):
+                writers[index] = writer.get_text()
+
+            cast_link = f"{link}fullcredits"
+            cast_response = requests.get(cast_link, headers=self.headers)
+            cast_table_rows = BeautifulSoup(cast_response.content, "html.parser").find(class_="cast_list").find_all("tr")[1:]
+            line = f'"{name}","{desc}","{rating}","{age_restriction}","{duration}","{genre}","{release_year}","{director}"'
+
+            line += ',"'
+            for writer in writers:
+                line += f"{writer},"
+            line = line[:-1]
+            line += '"'
+
+            line += ',"'
+            for cast_table_row in cast_table_rows:
+                try:
+                    actor = cast_table_row.find_all("td")[1].a.text.strip()
+                    character = cast_table_row.find_all("td")[3].a.text.strip()
+                except AttributeError:
+                    continue
+                except IndexError:
+                    break
+                else:
+                    line += f"{actor}:{character},"
+            line = line[:-1]
+            line += '"\n'
+
             self.file.write(line)
-
+            # print(i + 1, name)
         self.file.close()
-
-    def get_data_file_info(self, search_word):
-        """Reads the file and gives the user basic data."""
-        self.file = open(self.file_name, "r")
-
-        lines = self.file.readlines()
-
-        for line in lines:
-            line = line.split(",")
-            name = line[1][1:-1].lower().strip()
-
-            if search_word.lower().strip() == name:
-                serial_num = line[0][1:-1].strip()
-                release_year = line[3][1:-1].strip()
-                rating = line[4][1:-2].strip()
-                link = line[2][1:-1].strip()
-
-                return {
-                    "rank" : serial_num,
-                    "release-year" : release_year,
-                    "rating" : rating,
-                    "link" : link,
-                }
-
-        return False
-
-        self.file.close()
-
-    def write_new_data(self, data_dict):
-        """After getting the details from the web this function writes into a file 'movie-details.csv'"""
-
-        self.detailed_file = open(self.detailed_file_name, "a")
-
-        movie = data_dict["movie"].replace(",", "_")
-        desc = data_dict["desc"].replace(",", "_")
-        director = data_dict["dir"]
-        writers = data_dict["writers"]
-        actors = data_dict["actors"]
-
-        line = f'"{movie.title()}","{desc}","{director}",'
-
-        line += "\""
-        for writer in writers:
-            line += writer + '_'
-        line = line[:-1]
-        line += "\","
-
-        line += "\""
-        for actor in actors:
-            line += actor + '_'
-        line = line[:-1]
-        line += "\"\n"
-
-        self.detailed_file.write(line)
-        self.detailed_file.close()
-
-    def check_detailed_file(self, name):
-        """Checks if the detailed file has a movie details."""
-
-        self.detailed_file = open(self.detailed_file_name, "r")
-
-        lines = self.detailed_file.readlines()
-        self.detailed_file.close()
-
-        name = name.lower().strip().replace(",", "_")
-        for line in lines:
-
-            line = line.split(",")
-            line_movie = line[0].lower().strip().replace("\"", "")
-
-            if name == line_movie:
-
-                movie = line_movie.title()
-                desc = line[1].replace("\"", "").replace("_", ",")
-                director = line[2].replace("\"", "")
-                writers = line[3].replace("\"", "").split("_")
-                actors = line[4].replace("\"", "").split("_")
-
-                return {
-                    "movie" : movie,
-                    "desc" : desc,
-                    "dir" : director,
-                    "writers" : writers,
-                    "actors" : actors
-                }
-        return False
-
-    def get_web_info(self, word):
-        """Used when the user wants more information on a movie."""
-
-        file_content = self.check_detailed_file(word)
-
-        if file_content != False:
-            return file_content
-
-        url = self.get_data_file_info(word)
-        if url != False:
-            url = url["link"]
-        else:
-            return False
-
-        response = requests.get(url, headers=self.headers)
-        plot = BeautifulSoup(response.content, "html.parser").find(class_="plot_summary")
-
-        desc = plot.find(class_="summary_text").get_text().strip()
-
-        credit_box = plot.find_all(class_="credit_summary_item")
-        director = credit_box[0].a.get_text()
-        writers = credit_box[1].find_all("a")
-        actors = credit_box[2].find_all("a")[:-1]
-
-        for index, writer in enumerate(writers):
-            writers[index] = writer.get_text()
-
-        for index, actor in enumerate(actors):
-            actors[index] = actor.get_text()
-
-
-        data_dict = {
-            "movie" : word,
-            "desc" : desc,
-            "dir" : director,
-            "writers" : writers,
-            "actors" : actors
-        }
-
-        self.write_new_data(data_dict)
-
-        return data_dict
-
-
-if __name__ == "__main__":
-    obj = Data()
-
-    # obj.restore_data()
-
-    movie = input("Enter any movie: ")
-    movie_info = obj.get_web_info(movie)
-
-    if movie_info:
-
-        print(movie_info["desc"])
-
-        print(f"\nDirector:\n\t{movie_info['dir']}")
-
-        print("Writers:")
-        for writer in movie_info["writers"]:
-            print(f"\t{writer.title()}")
-
-        print("Actors:")
-        for actor in movie_info["actors"]:
-            print(f"\t{actor.title()}")
-
-    else:
-        print("Movie Not Found.")
