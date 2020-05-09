@@ -25,7 +25,7 @@ class Data:
         self.file = open(self.file_name, "w")
         self.file.write("Name,Summary,IMDb Rating,Age Appropriate,Duration,Genre,Release Year,Director,Writers,Actor:Character\n")
 
-        for i, self.row in enumerate(self.rows[:2]):
+        for i, self.row in enumerate(self.rows):
 
             name = self.row.find(class_="titleColumn").a.get_text().strip()
             link = f"https://www.imdb.com/{self.row.a['href']}".split("?")[0]
@@ -93,5 +93,5 @@ class Data:
             line += '"\n'
 
             self.file.write(line)
-            # print(i + 1, name)
+            print(i + 1, name)
         self.file.close()
