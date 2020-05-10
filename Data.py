@@ -96,11 +96,16 @@ class Data:
 
         movie_page_url = google_page_soup.find(class_="r").a["href"]
 
+        if "https://www.imdb.com/title/" not in movie_page_url:
+            return False
+
         name, line = self.get_movie_data(movie_page_url)
 
         self.file = open(self.file_name, "a")
         self.file.write(line)
         self.file.close()
+
+        return True
 
 
     def restore_data(self):
@@ -114,7 +119,7 @@ class Data:
         self.file = open(self.file_name, "w")
         self.file.write("Name,Summary,IMDb Rating,Age Appropriate,Duration,Genre,Release Year,Director,Writers,Actor:Character\n")
 
-        for i, self.row in enumerate(self.rows[:10]):
+        for i, self.row in enumerate(self.rows):
 
             link = f"https://www.imdb.com/{self.row.a['href']}".split("?")[0]
             name, line = self.get_movie_data(link)
@@ -124,3 +129,36 @@ class Data:
             print(i + 1, name)
 
         self.file.close()
+
+    def get_movie_dict(self, word):
+        """Returns the a dictionary of the line containing word."""
+        file = open(self.file_name, "r")
+        lines = file.readlines()[1:]
+        file.close()
+
+        for line in lines:
+            # following lines have been done to maintain the commas
+            line = line[1:]
+            line = line.replace('","', "_")
+            line = line.split("_")
+            # print(line)
+
+            for index, item in enumerate(line):
+                if index != 3 and index != 4 and index != 6:
+                    # this is because index 3 4 and 6 contain the age, duration, release,
+                    item = item.replace('"', "").lower().strip()
+                    if word.lower().strip() == item:
+                        data_dict = {
+                            "name" : line[0],
+                            "desc" : line[1],
+                            "rating" : line[2],
+                            "age" : line[3],
+                            "duration" : line[4],
+                            "genre" : line[5],
+                            "release-date" : line[6],
+                            "director" : line[7],
+                            "writers" : line[8].split(","),
+                            "cast" : line[9].replace('"', "").strip().split(","),
+                        }
+                        return data_dict
+        return False
