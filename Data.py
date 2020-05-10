@@ -1,7 +1,6 @@
 from bs4 import BeautifulSoup
 import datetime
 import requests
-import sys
 
 
 class Data:
@@ -50,7 +49,7 @@ class Data:
 
         plot = new_page_soup.find(class_="plot_summary")
 
-        desc = plot.find(class_="summary_text").get_text().strip()
+        desc = plot.find(class_="summary_text").get_text().replace("\"", "'").strip()
 
         credit_box = plot.find_all(class_="credit_summary_item")
         director = credit_box[0].a.get_text()
@@ -86,7 +85,7 @@ class Data:
         return name, line
 
     def get_data_line_from_google(self, movie):
-        """Gets the data from google if movie not found in database."""
+        """Gets the data from google and writes it into the csv file."""
 
         movie = movie.strip().replace(" ", "+")
         url = f'https://www.google.com/search?q=imdb+{movie}'
@@ -130,7 +129,7 @@ class Data:
 
         self.file.close()
 
-    def get_movie_dict(self, word):
+    def get_movie_dict_from_file(self, word):
         """Returns the a dictionary of the line containing word."""
         file = open(self.file_name, "r")
         lines = file.readlines()[1:]
@@ -141,11 +140,11 @@ class Data:
             line = line[1:]
             line = line.replace('","', "_")
             line = line.split("_")
-            # print(line)
 
             for index, item in enumerate(line):
                 if index != 3 and index != 4 and index != 6:
-                    # this is because index 3 4 and 6 contain the age, duration, release,
+                    # this is because index 3 4 and 6 contain the age, duration, release
+
                     item = item.replace('"', "").lower().strip()
                     if word.lower().strip() == item:
                         data_dict = {
