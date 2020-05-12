@@ -114,7 +114,28 @@ class ChatBot(Data):
             actor = input("\nEnter the actor name:\n>>>").lower().strip()
 
             actor_dict = self.load_actor_data(actor)
-            print(actor_dict)
+
+            if actor_dict:
+
+                req_data = input("\nWhat are you looking for?(all, number of films performed, names of films performed)\n>>>").lower().strip()
+
+                if req_data == "all":
+                    print(f"\nNumber of movies:\n\t{actor_dict['movie-num']}")
+                    print("Movie Names:")
+                    for movie in actor_dict['movie-names']:
+                        print(f"\t{movie}")
+
+                elif req_data == "number of films performed":
+                    print(f"\nNumber of movies:\n\t{actor_dict['movie-num']}")
+
+                elif req_data == "names of films performed":
+
+                    print("\nMovie Names:")
+                    for movie in actor_dict['movie-names']:
+                        print(f"\t{movie}")
+
+            else:
+                pass
 
         else:
             pass

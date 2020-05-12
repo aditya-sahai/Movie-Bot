@@ -137,12 +137,17 @@ class Data:
                     movies_performed_names.append(line[0])
                     break
 
-        data_dict = {
-            "movie-num" : movies_performed_num,
-            "movie-names" : movies_performed_names,
-        }
+        if movies_performed_num >= 1:
 
-        return data_dict
+            data_dict = {
+                "movie-num" : movies_performed_num,
+                "movie-names" : movies_performed_names,
+            }
+
+            return data_dict
+
+        else:
+            return False
 
     def restore_data(self):
         """Updates the movies in the csv file and deletes old data."""
