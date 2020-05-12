@@ -105,6 +105,44 @@ class Data:
 
         return True
 
+    def count_actor_frequency(self):
+        """Returns the number of movies an actor has performed in."""
+
+        pass
+
+    def load_actor_data(self, arg_actor):
+        """Returns a dictionary containing actor data."""
+
+        file = open(self.file_name, "r")
+        lines = file.readlines()[1:]
+        file.close()
+
+        input_actor = arg_actor.lower().strip()
+        movies_performed_num = 0
+        movies_performed_names = []
+
+        for line in lines:
+            # following lines have been done to maintain the commas
+            line = line[1:]
+            line = line.replace('","', "_").replace('"', "")
+            line = line.split("_")
+
+            actors = line[9].split(",")
+
+            for actor in actors:
+                actor = actor.split(":")[0].lower().strip()
+
+                if input_actor == actor:
+                    movies_performed_num += 1
+                    movies_performed_names.append(line[0])
+                    break
+
+        data_dict = {
+            "movie-num" : movies_performed_num,
+            "movie-names" : movies_performed_names,
+        }
+
+        return data_dict
 
     def restore_data(self):
         """Updates the movies in the csv file and deletes old data."""

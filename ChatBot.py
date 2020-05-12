@@ -91,22 +91,30 @@ class ChatBot(Data):
 
             else:
 
-                data_dict = self.get_data_line_from_google(movie)
-
+                # the following has been done to get a precise name
                 movie = movie.strip().replace(" ", "+")
                 url = f'https://www.google.com/search?q=imdb+{movie}'
                 response = requests.get(url, headers=self.headers)
 
-                # the following has been done to get a precise name
                 title = BeautifulSoup(response.content, "html.parser").find(class_="LC20lb DKV0Md").get_text().replace(" - IMDb", "").strip()[:-7]
                 print(f'Getting results for {title}.')
 
+                # this is done so that the name written in the file and the name being searched are same
                 movie = title
+
+                if not self.get_movie_dict_from_file(movie):
+
+                    # this is needed so as to write a line of the movie in the file else it is not needed
+                    data_dict = self.get_data_line_from_google(movie)
 
                 self.chat(category, movie)
 
         elif category == "actor":
-            pass
+
+            actor = input("\nEnter the actor name:\n>>>").lower().strip()
+
+            actor_dict = self.load_actor_data(actor)
+            print(actor_dict)
 
         else:
             pass
