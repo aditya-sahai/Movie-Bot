@@ -2,4 +2,4 @@ from ChatBot import ChatBot
 
 
 Bot = ChatBot()
-Bot.chat()
+Bot.chat(None, None)

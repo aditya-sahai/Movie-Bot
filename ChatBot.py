@@ -1,3 +1,5 @@
+import requests
+from bs4 import BeautifulSoup
 from Data import Data
 
 
@@ -23,7 +25,7 @@ class ChatBot(Data):
             print(f"\t{data_dict[required_data]}")
 
         else:
-            print(f"{user_data.title()}:\n")
+            print(f"{required_data.title()}:\n")
             print(f"\t{data_dict[required_data]}")
 
     def show_output(self, required_data, user_data, data_dict):
@@ -32,20 +34,31 @@ class ChatBot(Data):
         if required_data != "all":
             output = data_dict[required_data]
 
-        if required_data == "all":
+        elif required_data == "all":
             for item in data_dict:
                 self.show_part(item, user_data, data_dict)
 
         else:
             self.show_part(required_data, user_data, data_dict)
 
-    def chat(self):
+    def chat(self, required_category, required_movie):
         """Gets input from user and shows output using show_output function."""
 
-        category = input("Enter the category(movie, actor):\n>>>").lower().strip()
+        if not required_category:
+            category = input("\nEnter the category(movie, actor):\n>>>").lower().strip()
+            get_movie = True
+
+        else:
+            category = required_category
+            get_movie = False
 
         if category == "movie":
-            movie = input("Enter the movie name:\n>>>")
+
+            if get_movie:
+                movie = input("\nEnter the movie name:\n>>>")
+
+            else:
+                movie = required_movie
 
             # return dict if found else returns false
             data_dict = self.get_movie_dict_from_file(movie)
@@ -77,7 +90,20 @@ class ChatBot(Data):
                 self.show_output(req_data, user_data, data_dict)
 
             else:
-                pass
+
+                data_dict = self.get_data_line_from_google(movie)
+
+                movie = movie.strip().replace(" ", "+")
+                url = f'https://www.google.com/search?q=imdb+{movie}'
+                response = requests.get(url, headers=self.headers)
+
+                # the following has been done to get a precise name
+                title = BeautifulSoup(response.content, "html.parser").find(class_="LC20lb DKV0Md").get_text().replace(" - IMDb", "").strip()[:-7]
+                print(f'Getting results for {title}.')
+
+                movie = title
+
+                self.chat(category, movie)
 
         elif category == "actor":
             pass
