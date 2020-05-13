@@ -32,14 +32,12 @@ class ChatBot(Data):
         """Displays the required output."""
 
         if required_data != "all":
-            output = data_dict[required_data]
+            # output = data_dict[required_data]
+            self.show_part(required_data, user_data, data_dict)
 
         elif required_data == "all":
             for item in data_dict:
                 self.show_part(item, user_data, data_dict)
-
-        else:
-            self.show_part(required_data, user_data, data_dict)
 
     def chat(self, required_category, required_movie):
         """Gets input from user and shows output using show_output function."""
