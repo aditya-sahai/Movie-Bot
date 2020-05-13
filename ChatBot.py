@@ -30,20 +30,20 @@ class ChatBot(Data):
 
     def show_output(self, required_data, user_data, data_dict):
         """Displays the required output."""
+        if required_data == "all":
+            for item in data_dict:
+                self.show_part(item, user_data, data_dict)
 
-        if required_data != "all":
+        else:
             # output = data_dict[required_data]
             self.show_part(required_data, user_data, data_dict)
 
-        elif required_data == "all":
-            for item in data_dict:
-                self.show_part(item, user_data, data_dict)
 
     def chat(self, required_category, required_movie):
         """Gets input from user and shows output using show_output function."""
 
         if not required_category:
-            category = input("\nEnter the category(movie, actor):\n>>>").lower().strip()
+            category =  "actor"# input("\nEnter the category(movie, actor):\n>>>").lower().strip()
             get_movie = True
 
         else:
@@ -109,31 +109,9 @@ class ChatBot(Data):
 
         elif category == "actor":
 
-            actor = input("\nEnter the actor name:\n>>>").lower().strip()
+            actor = "tim robbins" # input("\nEnter the actor name:\n>>>").lower().strip()
 
-            actor_dict = self.load_actor_data(actor)
-
-            if actor_dict:
-
-                req_data = input("\nWhat are you looking for?(all, number of films performed, names of films performed)\n>>>").lower().strip()
-
-                if req_data == "all":
-                    print(f"\nNumber of movies:\n\t{actor_dict['movie-num']}")
-                    print("Movie Names:")
-                    for movie in actor_dict['movie-names']:
-                        print(f"\t{movie}")
-
-                elif req_data == "number of films performed":
-                    print(f"\nNumber of movies:\n\t{actor_dict['movie-num']}")
-
-                elif req_data == "names of films performed":
-
-                    print("\nMovie Names:")
-                    for movie in actor_dict['movie-names']:
-                        print(f"\t{movie}")
-
-            else:
-                pass
+            actor_data = self.load_actor_data(actor)
 
         else:
             pass

@@ -6,8 +6,7 @@ class Data:
     """A class for reading and updating the csv file."""
     def __init__(self):
         """Initialize values."""
-        self.file_name = "movies-data.csv"
-        self.detailed_file_name = "movie-details.csv"
+        self.movie_file_name = "movies-data.csv"
         self.URL = "https://www.imdb.com/chart/top/?ref_=nv_mv_250"
         USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"
         self.headers = {"user-agent" : USER_AGENT}
@@ -99,55 +98,111 @@ class Data:
 
         name, line = self.get_movie_data(movie_page_url)
 
-        self.file = open(self.file_name, "a")
+        self.file = open(self.movie_file_name, "a")
         self.file.write(line)
         self.file.close()
 
         return True
 
-    def count_actor_frequency(self):
-        """Returns the number of movies an actor has performed in."""
-
-        pass
-
-    def load_actor_data(self, arg_actor):
+    def load_actor_data(self, actor):
         """Returns a dictionary containing actor data."""
 
-        file = open(self.file_name, "r")
-        lines = file.readlines()[1:]
-        file.close()
+        # file = open(self.movie_file_name, "r")
+        # lines = file.readlines()[1:]
+        # file.close()
+        #
+        # input_actor = arg_actor.lower().strip()
+        # movies_performed_num = 0
+        # movies_performed_names = []
+        #
+        # for line in lines:
+        #     # following lines have been done to maintain the commas
+        #     line = line[1:]
+        #     line = line.replace('","', "_").replace('"', "")
+        #     line = line.split("_")
+        #
+        #     actors = line[9].split(",")
+        #
+        #     for actor in actors:
+        #         actor = actor.split(":")[0].lower().strip()
+        #
+        #         if input_actor == actor:
+        #             movies_performed_num += 1
+        #             movies_performed_names.append(line[0])
+        #             break
+        #
+        # if movies_performed_num >= 1:
+        #
+        #     data_dict = {
+        #         "movie-num" : movies_performed_num,
+        #         "movie-names" : movies_performed_names,
+        #     }
+        #
+        #     return data_dict
+        #
+        # else:
+        #     return False
 
-        input_actor = arg_actor.lower().strip()
-        movies_performed_num = 0
-        movies_performed_names = []
+        data = []
 
-        for line in lines:
-            # following lines have been done to maintain the commas
-            line = line[1:]
-            line = line.replace('","', "_").replace('"', "")
-            line = line.split("_")
+        actor = actor.replace(" ", "+")
+        google_page_url = f"https://www.google.com/search?q=imdb+{actor}"
 
-            actors = line[9].split(",")
+        google_page_response = requests.get(google_page_url, headers=self.headers)
+        google_soup = BeautifulSoup(google_page_response.content, "html.parser")
 
-            for actor in actors:
-                actor = actor.split(":")[0].lower().strip()
+        link = google_soup.find(class_="r").a["href"]
 
-                if input_actor == actor:
-                    movies_performed_num += 1
-                    movies_performed_names.append(line[0])
-                    break
+        imdb_response = requests.get(link, headers=self.headers)
+        imdb_soup = BeautifulSoup(imdb_response.content, "html.parser")
 
-        if movies_performed_num >= 1:
+        imdb_soup.find(class_="see-more inline nobr-only").decompose()
 
-            data_dict = {
-                "movie-num" : movies_performed_num,
-                "movie-names" : movies_performed_names,
-            }
+        birthdate = imdb_soup.find("time").get_text()
+        birthdate = birthdate.split(",")
+        birthdate = f'{birthdate[0].strip()}, {birthdate[1].strip()}'
 
-            return data_dict
+        movies_done_rows = imdb_soup.find(class_="filmo-category-section").find_all("div", {"class" : "filmo-row odd"})
 
-        else:
-            return False
+        for movie_done_row in movies_done_rows:
+
+            actor_code = movie_done_row.attrs["id"].replace("actor-", "")
+
+            # the for and the if would remove the episode if the actor has performed a tv series
+            for movie_done in movie_done_row.find_all(class_="filmo-episodes"):
+                movie_done.decompose()
+
+            if movie_done_row.find(id=f"more-episodes-{actor_code}-actor"):
+                movie_done_row.find(id=f"more-episodes-{actor_code}-actor").decompose()
+
+            movie_name = movie_done_row.b.a.get_text().strip()
+            character_played = str(movie_done_row).split("br")[-1].replace("</div>", "").replace("/>", "").strip()
+
+            single_movie_data = {"movie" : movie_name, "character" : character_played}
+            data.append(single_movie_data)
+            # print(single_movie_data)
+
+        movies_done_rows = imdb_soup.find(class_="filmo-category-section").find_all("div", {"class" : "filmo-row even"})
+
+        for movie_done_row in movies_done_rows:
+
+            actor_code = movie_done_row.attrs["id"].replace("actor-", "")
+
+            # the for and the if would remove the episode if the actor has performed a tv series
+            for movie_done in movie_done_row.find_all(class_="filmo-episodes"):
+                movie_done.decompose()
+
+            if movie_done_row.find(id=f"more-episodes-{actor_code}-actor"):
+                movie_done_row.find(id=f"more-episodes-{actor_code}-actor").decompose()
+
+            movie_name = movie_done_row.b.a.get_text().strip()
+            character_played = str(movie_done_row).split("br")[-1].replace("</div>", "").replace("/>", "").strip()
+
+            single_movie_data = {"movie" : movie_name, "character" : character_played}
+            data.append(single_movie_data)
+            # print(single_movie_data)
+
+        return data
 
     def restore_data(self):
         """Updates the movies in the csv file and deletes old data."""
@@ -157,7 +212,7 @@ class Data:
         self.table_soup = BeautifulSoup(response.content, "html.parser").find(class_="lister-list")
         self.rows = self.table_soup.find_all("tr")
 
-        self.file = open(self.file_name, "w")
+        self.file = open(self.movie_file_name, "w")
         self.file.write("Name,Summary,IMDb Rating,Age Appropriate,Duration,Genre,Release Year,Director,Writers,Actor:Character\n")
 
         for i, self.row in enumerate(self.rows):
@@ -173,7 +228,7 @@ class Data:
 
     def get_movie_dict_from_file(self, word):
         """Returns the a dictionary of the line containing word."""
-        file = open(self.file_name, "r")
+        file = open(self.movie_file_name, "r")
         lines = file.readlines()[1:]
         file.close()
 
