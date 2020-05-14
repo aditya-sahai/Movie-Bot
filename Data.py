@@ -107,42 +107,6 @@ class Data:
     def load_actor_data(self, actor):
         """Returns a dictionary containing actor data."""
 
-        # file = open(self.movie_file_name, "r")
-        # lines = file.readlines()[1:]
-        # file.close()
-        #
-        # input_actor = arg_actor.lower().strip()
-        # movies_performed_num = 0
-        # movies_performed_names = []
-        #
-        # for line in lines:
-        #     # following lines have been done to maintain the commas
-        #     line = line[1:]
-        #     line = line.replace('","', "_").replace('"', "")
-        #     line = line.split("_")
-        #
-        #     actors = line[9].split(",")
-        #
-        #     for actor in actors:
-        #         actor = actor.split(":")[0].lower().strip()
-        #
-        #         if input_actor == actor:
-        #             movies_performed_num += 1
-        #             movies_performed_names.append(line[0])
-        #             break
-        #
-        # if movies_performed_num >= 1:
-        #
-        #     data_dict = {
-        #         "movie-num" : movies_performed_num,
-        #         "movie-names" : movies_performed_names,
-        #     }
-        #
-        #     return data_dict
-        #
-        # else:
-        #     return False
-
         data = []
 
         actor = actor.replace(" ", "+")
