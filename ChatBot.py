@@ -179,4 +179,5 @@ class ChatBot(Data):
 
 
         else:
-            pass
+            print("Could not understand.")
+            self.chat(None, None)
