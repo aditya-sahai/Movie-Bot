@@ -81,7 +81,59 @@ class Data:
 
         return movie_data
 
+    def write_single_movie_data(self, data):
+        """Writes a single movie into the file."""
+
+        line = f'\"{data["name"]}\",\"{data["summary"]}\",\"{data["rating"]}\",'
+
+        line += '"'
+        for genre in data["genre"]:
+            line += f"{genre},"
+        line = line[:-1]
+        line += '",'
+
+        line += f'\"{data["duration"]}\",'
+        line += f'\"{data["age-appropriate"]}\",'
+        line += f'\"{data["release-date"]}\",'
+        line += f'\"{data["director"]}\",'
+
+        line += '"'
+        for writer in data["writers"]:
+            line += f"{writer},"
+        line = line[:-1]
+        line += '",'
+
+        line += '"'
+        for actor in data["actors"]:
+            line += f"{actor[0]} : {actor[1]}"
+        line = line[:-1]
+        line += '"\n'
+
+        self.movie_file.write(line)
+
+    def write_top_250_movies_data(self):
+        """Writes the data of the top 250 movies into a csv file."""
+
+        imdb_response = requests.get(self.MOVIE_URL, headers=Data.headers)
+        imdb_soup = BeautifulSoup(imdb_response.content, "html.parser")
+
+        imdb_table = imdb_soup.find("tbody", {"class" : "lister-list"})
+        movie_rows = imdb_table.find_all("tr")
+
+        self.movie_file = open(self.MOVIE_FILE_NAME, "w")
+        self.movie_file.write("Movie,Summary,Rating,Duration,Age-Approriate,Rlease-Date,Director,Writers,Actors:Characters\n")
+
+        for num, movie in enumerate(movie_rows):
+            url = f'https://www.imdb.com{movie.find("td", {"class" : "titleColumn"}).a["href"].split("?")[0]}'
+            data = self.get_single_movie_data_url(url)
+
+            self.write_single_movie_data(data)
+            print(f"Movie#{num+1}, \'{data['name']}\' is done.")
+
+        self.movie_file.close()
+
 if __name__ == "__main__":
     obj = Data()
+
     movie_data = obj.get_single_movie_data_url("https://www.imdb.com/title/tt0111161/")
-    print(movie_data)
+    obj.write_top_250_movies_data()
