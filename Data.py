@@ -186,7 +186,7 @@ class Data:
 
         return data
 
-    def get_single_actor_data_name(self, actor_name):
+    def get_actor_data_name(self, actor_name):
         """Returns dictionary containing actor data from a name."""
 
         url = f"https://www.google.com/search?q=imdb+{actor_name.replace(' ', '+')}"
@@ -233,20 +233,56 @@ class Data:
 
         return data_dict
 
-    def write_actor_data(self, actor_data):
+    def get_actor_data_file(self, actor_name):
+        """Returns data if found else returns None."""
+
+        actor_name = actor_name.lower().strip()
+
+        self.actor_file = open(self.ACTOR_FILE_NAME, "r")
+        lines = self.actor_file.read().split("\n")
+        self.actor_file.close()
+
+        for line in lines:
+            line = line.replace('","', "_")
+            line = line[1:-1]
+            line = line.split("_")
+
+            file_actor = line[0].lower().strip()
+
+            if file_actor == actor_name:
+
+                famous_movies = line[3].split(" , ")
+                for index, movie in enumerate(famous_movies):
+                    famous_movies[index] = movie.split(" : ")
+
+                movies = line[4].split(" , ")
+
+                data_dict = {
+                    "name" : file_actor.title(),
+                    "birthdate" : line[1],
+                    "birthplace" : line[2],
+                    "famous-movies/series" : famous_movies,
+                    "all-movies/series" : movies,
+                }
+
+                return data_dict
+
+        return None
+
+    def write_new_actor_data(self, actor_data):
         """Writes the actor data in the actors-data.csv file."""
 
         line = f"\"{actor_data['name'].title()}\",\"{actor_data['birthdate']}\",\"{actor_data['birthplace']}\","
 
         line += '"'
         for famous_movie in actor_data["famous-movies/series"]:
-            line += f'{famous_movie[0]} : {famous_movie[1]}, '
+            line += f'{famous_movie[0]} : {famous_movie[1]} , '
         line = line[:-2]
         line += '",'
 
         line += '"'
         for movie in actor_data["all-movies/series"]:
-            line += f'{movie}, '
+            line += f'{movie} , '
         line = line[:-2]
         line += '"\n'
 
@@ -257,5 +293,6 @@ class Data:
 
 if __name__ == "__main__":
     obj = Data()
-    actor_data = obj.get_single_actor_data_name("robert downey jr.")
-    obj.write_actor_data(actor_data)
+
+    actor_data = obj.get_actor_data_file("chris evans")
+    print(actor_data)
