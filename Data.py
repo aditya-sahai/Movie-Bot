@@ -186,6 +186,56 @@ class Data:
 
         return data
 
+    def get_single_actor_data_name(self, actor_name):
+        """Returns dictionary containing actor data from a name."""
+
+        url = f"https://www.google.com/search?q=imdb+{actor_name.replace(' ', '+')}"
+
+        google_response = requests.get(url, headers=Data.headers)
+        google_soup = BeautifulSoup(google_response.content, "html.parser")
+
+        link = google_soup.find("div", {"class" : "r"}).a["href"]
+
+        imdb_response = requests.get(link, headers=Data.headers)
+        imdb_soup = BeautifulSoup(imdb_response.content, "html.parser")
+
+        birthdate = imdb_soup.find("time").get_text().replace("\n", "").split(",")
+        birthdate = f"{birthdate[0].strip()}, {birthdate[1].strip()}"
+
+        birthplace = imdb_soup.find("div", {"id" : "name-born-info"}).find_all("a")[-1].get_text().strip()
+
+        famous_movies = imdb_soup.find_all("div", {"class" : "knownfor-title"})
+
+        for index, movie in enumerate(famous_movies):
+            movie_name = movie.find("div", {"class" : "knownfor-title-role"}).a.get_text().strip()
+            character_played = movie.find("span", {"class" : "knownfor-ellipsis"}).get_text().strip()
+
+            famous_movies[index] = (movie_name, character_played)
+
+        movies_table = imdb_soup.find("div", {"class" : "filmo-category-section"})
+        movie_table_rows = movies_table.find_all("div")
+
+        movie_data = []
+
+        for index, movie_row in enumerate(movie_table_rows):
+
+            if movie_row.get("id") and not movie_row.get("style"):
+                movie = movie_row.b.a.get_text().strip()
+                movie_data.append(movie)
+
+        data_dict = {
+            "name" : actor_name.title(),
+            "birthdate" : birthdate,
+            "birthplace" : birthplace,
+            "famous-movies/series" : famous_movies,
+            "all-movies/series" : movie_data,
+        }
+
+        return data_dict
+
+
 if __name__ == "__main__":
     obj = Data()
-    data = obj.write_new_movie_data("cars 3")
+    actor_data = obj.get_single_actor_data_name("chris evans")
+
+    print(actor_data)
