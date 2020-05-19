@@ -4,221 +4,84 @@ import requests
 
 class Data:
     """A class for reading and updating the csv file."""
+
+    headers = {"user-agent" : "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"}
+
     def __init__(self):
         """Initialize values."""
-        self.movie_file_name = "movies-data.csv"
-        self.URL = "https://www.imdb.com/chart/top/?ref_=nv_mv_250"
-        USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:65.0) Gecko/20100101 Firefox/65.0"
-        self.headers = {"user-agent" : USER_AGENT}
+        self.MOVIE_FILE_NAME = "movies-data.csv"
+        self.MOVIE_URL = "https://www.imdb.com/chart/top/?ref_=nv_mv_250"
 
-    def get_movie_data(self, url):
-        """Returns a line to be written in the movie-data.csv file from a given url."""
-        movie_response = requests.get(url, headers=self.headers)
-        new_page_soup = BeautifulSoup(movie_response.content, "html.parser")
+    def get_single_movie_data_url(self, url):
+        """Returns dictionary containing movie data from a given url."""
 
-        # this is done to remove the span which contained the year in the h1 containing title
-        new_page_soup.find(id="titleYear").decompose()
-        name = new_page_soup.find(class_="title_wrapper").h1.get_text().strip()
-
-        # here we are looking for a span with attr 'itemprop' and value 'ratingValue'
-        rating = new_page_soup.find("span", {"itemprop" : "ratingValue"}).get_text().strip()
-
-        title_list = new_page_soup.find(class_="subtext").get_text().split("|")
-
-        try:
-            release_year = title_list[3].strip()
-        except IndexError:
-            release_year = title_list[2].strip()
-            age_restriction = "Unknown"
-            duration = title_list[0].strip()
-            genre_list = title_list[1].strip().split(",")
-            genre = ""
-            for genre_var in genre_list:
-                genre += f"{genre_var.strip()},"
-            genre = genre[:-1]
-        else:
-            age_restriction = title_list[0].strip()
-            duration = title_list[1].strip()
-            genre_list = title_list[2].strip().split(",")
-            genre = ""
-            for genre_var in genre_list:
-                genre += f"{genre_var.strip()},"
-            genre = genre[:-1]
-
-        plot = new_page_soup.find(class_="plot_summary")
-
-        desc = plot.find(class_="summary_text").get_text().replace("\"", "'").strip()
-
-        credit_box = plot.find_all(class_="credit_summary_item")
-        director = credit_box[0].a.get_text()
-        writers = credit_box[1].find_all("a")
-
-        for index, writer in enumerate(writers):
-            writers[index] = writer.get_text()
-
-        cast_link = f"{url}fullcredits"
-        cast_response = requests.get(cast_link, headers=self.headers)
-        cast_table_rows = BeautifulSoup(cast_response.content, "html.parser").find(class_="cast_list").find_all("tr")[1:]
-        line = f'"{name}","{desc}","{rating}","{age_restriction}","{duration}","{genre}","{release_year}","{director}"'
-
-        line += ',"'
-        for writer in writers:
-            line += f"{writer},"
-        line = line[:-1]
-        line += '"'
-
-        line += ',"'
-        for cast_table_row in cast_table_rows:
-            try:
-                actor = cast_table_row.find_all("td")[1].a.text.strip()
-                character = cast_table_row.find_all("td")[3].a.text.strip()
-            except AttributeError:
-                continue
-            except IndexError:
-                break
-            else:
-                line += f"{actor}:{character},"
-        line = line[:-1]
-        line += '"\n'
-        return name, line
-
-    def get_data_line_from_google(self, movie):
-        """Gets the data from google and writes it into the csv file."""
-
-        movie = movie.strip().replace(" ", "+")
-        url = f'https://www.google.com/search?q=imdb+{movie}'
-
-        google_page_response = requests.get(url, headers=self.headers)
-        google_page_soup = BeautifulSoup(google_page_response.content, "html.parser")
-
-        movie_page_url = google_page_soup.find(class_="r").a["href"]
-
-        if "https://www.imdb.com/title/" not in movie_page_url:
-            return False
-
-        name, line = self.get_movie_data(movie_page_url)
-
-        self.file = open(self.movie_file_name, "a")
-        self.file.write(line)
-        self.file.close()
-
-        return True
-
-    def load_actor_data(self, actor):
-        """Returns a dictionary containing actor data."""
-
-        data = []
-
-        actor = actor.replace(" ", "+")
-        google_page_url = f"https://www.google.com/search?q=imdb+{actor}"
-
-        google_page_response = requests.get(google_page_url, headers=self.headers)
-        google_soup = BeautifulSoup(google_page_response.content, "html.parser")
-
-        link = google_soup.find(class_="r").a["href"]
-
-        imdb_response = requests.get(link, headers=self.headers)
+        imdb_response = requests.get(url, headers=Data.headers)
         imdb_soup = BeautifulSoup(imdb_response.content, "html.parser")
 
-        imdb_soup.find(class_="see-more inline nobr-only").decompose()
+        imdb_soup.find("div", {"class" : "title_wrapper"}).h1.span.decompose()
+        movie_name = imdb_soup.find("div", {"class" : "title_wrapper"}).h1.get_text().strip()
 
-        birthdate = imdb_soup.find("time").get_text()
-        birthdate = birthdate.split(",")
-        birthdate = f'{birthdate[0].strip()}, {birthdate[1].strip()}'
+        sub_title_data = imdb_soup.find("div", {"class" : "subtext"}).get_text().split("|")
 
-        movies_done_rows = imdb_soup.find(class_="filmo-category-section").find_all("div", {"class" : "filmo-row odd"})
+        try:
+            age_restriction, duration, genre, release_date = sub_title_data
 
-        for movie_done_row in movies_done_rows:
+        except ValueError:
+            age_restriction = "Approved"
+            duration, genre, release_date = sub_title_data
 
-            actor_code = movie_done_row.attrs["id"].replace("actor-", "")
+        age_restriction = age_restriction.strip()
+        duration = duration.strip()
+        genre = genre.strip().split("\n")
+        release_date = release_date.strip()
 
-            # the for and the if would remove the episode if the actor has performed a tv series
-            for movie_done in movie_done_row.find_all(class_="filmo-episodes"):
-                movie_done.decompose()
+        rating = imdb_soup.find("span", {"itemprop" : "ratingValue"}).get_text().strip()
 
-            if movie_done_row.find(id=f"more-episodes-{actor_code}-actor"):
-                movie_done_row.find(id=f"more-episodes-{actor_code}-actor").decompose()
+        summary = imdb_soup.find("div", {"class" : "summary_text"}).get_text().strip()
 
-            movie_name = movie_done_row.b.a.get_text().strip()
-            character_played = str(movie_done_row).split("br")[-1].replace("</div>", "").replace("/>", "").strip()
+        cast_page_url = f"{url}fullcredits/"
+        cast_page_response = requests.get(cast_page_url, headers=Data.headers)
+        cast_page_soup = BeautifulSoup(cast_page_response.content, "html.parser")
 
-            single_movie_data = {"movie" : movie_name, "character" : character_played}
-            data.append(single_movie_data)
-            # print(single_movie_data)
+        credits_tables = cast_page_soup.find_all("table", {"class" : "simpleTable simpleCreditsTable"})
 
-        movies_done_rows = imdb_soup.find(class_="filmo-category-section").find_all("div", {"class" : "filmo-row even"})
+        director = credits_tables[0].find("td", {"class" : "name"}).get_text().strip()
+        writers = credits_tables[1].find_all("td", {"class" : "name"})
 
-        for movie_done_row in movies_done_rows:
+        for index, writer in enumerate(writers):
+            writers[index] = writer.get_text().strip()
 
-            actor_code = movie_done_row.attrs["id"].replace("actor-", "")
+        actors_data = cast_page_soup.find("table", {"class" : "cast_list"}).find_all("tr")[1:]
 
-            # the for and the if would remove the episode if the actor has performed a tv series
-            for movie_done in movie_done_row.find_all(class_="filmo-episodes"):
-                movie_done.decompose()
+        for index, actor_row in enumerate(actors_data):
 
-            if movie_done_row.find(id=f"more-episodes-{actor_code}-actor"):
-                movie_done_row.find(id=f"more-episodes-{actor_code}-actor").decompose()
+            # this is done to catch the empty line before the uncredited cast
+            if len(actor_row.get_text().split("...")) < 2:
+                # slicing is done to remove the uncredited actors
+                actors_data = actors_data[:index]
+                break
 
-            movie_name = movie_done_row.b.a.get_text().strip()
-            character_played = str(movie_done_row).split("br")[-1].replace("</div>", "").replace("/>", "").strip()
+            else:
+                actor, character = actor_row.get_text().split("...")
+                actor, character = actor.strip(), character.strip().replace(" \n  \n  \n  ", " ")
+                actors_data[index] = (actor, character)
 
-            single_movie_data = {"movie" : movie_name, "character" : character_played}
-            data.append(single_movie_data)
-            # print(single_movie_data)
+        movie_data = {
+            "name" : movie_name,
+            "age-appropriate" : age_restriction,
+            "duration" : duration,
+            "genre" : genre,
+            "release-date" : release_date,
+            "rating" : rating,
+            "summary" : summary,
+            "director" : director,
+            "writers" : writers,
+            "actors" : actors_data,
+        }
 
-        return data
+        return movie_data
 
-    def restore_data(self):
-        """Updates the movies in the csv file and deletes old data."""
-        response = requests.get(self.URL, headers=self.headers)
-        # print(response.status_code)
-
-        self.table_soup = BeautifulSoup(response.content, "html.parser").find(class_="lister-list")
-        self.rows = self.table_soup.find_all("tr")
-
-        self.file = open(self.movie_file_name, "w")
-        self.file.write("Name,Summary,IMDb Rating,Age Appropriate,Duration,Genre,Release Year,Director,Writers,Actor:Character\n")
-
-        for i, self.row in enumerate(self.rows):
-
-            link = f"https://www.imdb.com/{self.row.a['href']}".split("?")[0]
-            name, line = self.get_movie_data(link)
-
-            self.file.write(line)
-
-            print(i + 1, name)
-
-        self.file.close()
-
-    def get_movie_dict_from_file(self, word):
-        """Returns the a dictionary of the line containing word."""
-        file = open(self.movie_file_name, "r")
-        lines = file.readlines()[1:]
-        file.close()
-
-        for line in lines:
-            # following lines have been done to maintain the commas
-            line = line[1:]
-            line = line.replace('","', "_")
-            line = line.split("_")
-
-            for index, item in enumerate(line):
-                if index != 3 and index != 4 and index != 6:
-                    # this is because index 3 4 and 6 contain the age, duration, release
-
-                    item = item.replace('"', "").lower().strip()
-                    if word.lower().strip() == item:
-                        data_dict = {
-                            "name" : line[0],
-                            "desc" : line[1],
-                            "rating" : line[2],
-                            "age" : line[3],
-                            "duration" : line[4],
-                            "genre" : line[5],
-                            "release-date" : line[6],
-                            "director" : line[7],
-                            "writers" : line[8].split(","),
-                            "cast" : line[9].replace('"', "").strip().split(","),
-                        }
-                        return data_dict
-        return False
+if __name__ == "__main__":
+    obj = Data()
+    movie_data = obj.get_single_movie_data_url("https://www.imdb.com/title/tt0111161/")
+    print(movie_data)
