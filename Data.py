@@ -12,6 +12,8 @@ class Data:
         self.MOVIE_FILE_NAME = "movies-data.csv"
         self.MOVIE_URL = "https://www.imdb.com/chart/top/?ref_=nv_mv_250"
 
+        self.ACTOR_FILE_NAME = "actors-data.csv"
+
     def get_single_movie_data_url(self, url):
         """Returns dictionary containing movie data from a given url."""
 
@@ -81,6 +83,40 @@ class Data:
 
         return movie_data
 
+    def get_single_movie_data_file(self, movie_name):
+        """Reads the file and returns a dictionary in the same form as get_single_movie_data_url()."""
+
+        movie_name = movie_name.lower().strip()
+        self.movie_file = open(self.MOVIE_FILE_NAME, "r")
+        lines = self.movie_file.read().split("\n")[1:-1]
+
+        for line in lines:
+            line = line.replace('","', "_")
+            line = line[1:-1]
+            line = line.split("_")
+
+            file_movie_name = line[0].lower().strip()
+
+            if file_movie_name == movie_name:
+                movie_data = {
+                    "name" : file_movie_name,
+                    "age-appropriate" : line[5],
+                    "duration" : line[4],
+                    "genre" : line[3].split(","),
+                    "release-date" : line[6],
+                    "rating" : line[2],
+                    "summary" : line[1],
+                    "director" : line[7],
+                    "writers" : line[8].split(","),
+                    "actors" : line[9].split(","),
+                }
+
+                self.movie_file.close()
+                return movie_data
+
+        self.movie_file.close()
+        return None
+
     def write_single_movie_data(self, data):
         """Writes a single movie into the file."""
 
@@ -132,42 +168,24 @@ class Data:
 
         self.movie_file.close()
 
-    def get_single_movie_data_file(self, movie_name):
-        """Reads the file and returns a dictionary in the same form as get_single_movie_data_url()."""
+    def write_new_movie_data(self, name):
+        """Writes a new movie data into the csv file."""
 
-        movie_name = movie_name.lower().strip()
-        self.movie_file = open(self.MOVIE_FILE_NAME, "r")
-        lines = self.movie_file.read().split("\n")[1:-1]
+        url = f"https://www.google.com/search?q=imdb+{name.replace(' ', '+')}"
 
-        for line in lines:
-            line = line.replace('","', "_")
-            line = line[1:-1]
-            line = line.split("_")
+        google_response = requests.get(url, headers=Data.headers)
+        google_soup = BeautifulSoup(google_response.content, "html.parser")
 
-            file_movie_name = line[0].lower().strip()
+        link = google_soup.find("div", {"class" : "r"}).a["href"]
 
-            if file_movie_name == movie_name:
-                movie_data = {
-                    "name" : file_movie_name,
-                    "age-appropriate" : line[5],
-                    "duration" : line[4],
-                    "genre" : line[3].split(","),
-                    "release-date" : line[6],
-                    "rating" : line[2],
-                    "summary" : line[1],
-                    "director" : line[7],
-                    "writers" : line[8].split(","),
-                    "actors" : line[9].split(","),
-                }
+        data = self.get_single_movie_data_url(link)
 
-                self.movie_file.close()
-                return movie_data
-
+        self.movie_file = open(self.MOVIE_FILE_NAME, "a")
+        self.write_single_movie_data(data)
         self.movie_file.close()
-        return None
+
+        return data
 
 if __name__ == "__main__":
     obj = Data()
-
-    movie_data = obj.get_single_movie_data_file("the Shawshank redemption")
-    print(movie_data)
+    data = obj.write_new_movie_data("cars 3")
