@@ -123,7 +123,7 @@ class Data:
         self.movie_file = open(self.MOVIE_FILE_NAME, "w")
         self.movie_file.write("Movie,Summary,Rating,Genre,Duration,Age-Approriate,Rlease-Date,Director,Writers,Actors:Characters\n")
 
-        for num, movie in enumerate(movie_rows[5:7]):
+        for num, movie in enumerate(movie_rows[:10]):
             url = f'https://www.imdb.com{movie.find("td", {"class" : "titleColumn"}).a["href"].split("?")[0]}'
             data = self.get_single_movie_data_url(url)
 
@@ -132,7 +132,42 @@ class Data:
 
         self.movie_file.close()
 
+    def get_single_movie_data_file(self, movie_name):
+        """Reads the file and returns a dictionary in the same form as get_single_movie_data_url()."""
+
+        movie_name = movie_name.lower().strip()
+        self.movie_file = open(self.MOVIE_FILE_NAME, "r")
+        lines = self.movie_file.read().split("\n")[1:-1]
+
+        for line in lines:
+            line = line.replace('","', "_")
+            line = line[1:-1]
+            line = line.split("_")
+
+            file_movie_name = line[0].lower().strip()
+
+            if file_movie_name == movie_name:
+                movie_data = {
+                    "name" : file_movie_name,
+                    "age-appropriate" : line[5],
+                    "duration" : line[4],
+                    "genre" : line[3].split(","),
+                    "release-date" : line[6],
+                    "rating" : line[2],
+                    "summary" : line[1],
+                    "director" : line[7],
+                    "writers" : line[8].split(","),
+                    "actors" : line[9].split(","),
+                }
+
+                self.movie_file.close()
+                return movie_data
+
+        self.movie_file.close()
+        return None
+
 if __name__ == "__main__":
     obj = Data()
 
-    obj.write_top_250_movies_data()
+    movie_data = obj.get_single_movie_data_file("the Shawshank redemption")
+    print(movie_data)
