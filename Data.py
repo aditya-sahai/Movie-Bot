@@ -32,7 +32,7 @@ class Data:
 
         age_restriction = age_restriction.strip()
         duration = duration.strip()
-        genre = genre.strip().split("\n")
+        genre = genre.strip().split(", \n")
         release_date = release_date.strip()
 
         rating = imdb_soup.find("span", {"itemprop" : "ratingValue"}).get_text().strip()
@@ -63,7 +63,7 @@ class Data:
 
             else:
                 actor, character = actor_row.get_text().split("...")
-                actor, character = actor.strip(), character.strip().replace(" \n  \n  \n  ", " ")
+                actor, character = actor.strip(), character.strip().replace("\n", "").replace("\t", "").replace("       ", " ")
                 actors_data[index] = (actor, character)
 
         movie_data = {
@@ -105,7 +105,7 @@ class Data:
 
         line += '"'
         for actor in data["actors"]:
-            line += f"{actor[0]} : {actor[1]}"
+            line += f"{actor[0]} : {actor[1]},"
         line = line[:-1]
         line += '"\n'
 
@@ -121,9 +121,9 @@ class Data:
         movie_rows = imdb_table.find_all("tr")
 
         self.movie_file = open(self.MOVIE_FILE_NAME, "w")
-        self.movie_file.write("Movie,Summary,Rating,Duration,Age-Approriate,Rlease-Date,Director,Writers,Actors:Characters\n")
+        self.movie_file.write("Movie,Summary,Rating,Genre,Duration,Age-Approriate,Rlease-Date,Director,Writers,Actors:Characters\n")
 
-        for num, movie in enumerate(movie_rows):
+        for num, movie in enumerate(movie_rows[5:7]):
             url = f'https://www.imdb.com{movie.find("td", {"class" : "titleColumn"}).a["href"].split("?")[0]}'
             data = self.get_single_movie_data_url(url)
 
@@ -135,5 +135,4 @@ class Data:
 if __name__ == "__main__":
     obj = Data()
 
-    movie_data = obj.get_single_movie_data_url("https://www.imdb.com/title/tt0111161/")
     obj.write_top_250_movies_data()
