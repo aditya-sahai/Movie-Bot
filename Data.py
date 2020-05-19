@@ -233,9 +233,29 @@ class Data:
 
         return data_dict
 
+    def write_actor_data(self, actor_data):
+        """Writes the actor data in the actors-data.csv file."""
+
+        line = f"\"{actor_data['name'].title()}\",\"{actor_data['birthdate']}\",\"{actor_data['birthplace']}\","
+
+        line += '"'
+        for famous_movie in actor_data["famous-movies/series"]:
+            line += f'{famous_movie[0]} : {famous_movie[1]}, '
+        line = line[:-2]
+        line += '",'
+
+        line += '"'
+        for movie in actor_data["all-movies/series"]:
+            line += f'{movie}, '
+        line = line[:-2]
+        line += '"\n'
+
+        self.actor_file = open(self.ACTOR_FILE_NAME, "a")
+        self.actor_file.write(line)
+        self.actor_file.close()
+
 
 if __name__ == "__main__":
     obj = Data()
-    actor_data = obj.get_single_actor_data_name("chris evans")
-
-    print(actor_data)
+    actor_data = obj.get_single_actor_data_name("robert downey jr.")
+    obj.write_actor_data(actor_data)
