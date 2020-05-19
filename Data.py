@@ -98,6 +98,12 @@ class Data:
             file_movie_name = line[0].lower().strip()
 
             if file_movie_name == movie_name:
+
+                actors = line[9].split(",")
+                for index, actor in enumerate(actors):
+                    actor = actor.split(" : ")
+                    actors[index] = actor
+
                 movie_data = {
                     "name" : file_movie_name,
                     "age-appropriate" : line[5],
@@ -108,7 +114,7 @@ class Data:
                     "summary" : line[1],
                     "director" : line[7],
                     "writers" : line[8].split(","),
-                    "actors" : line[9].split(","),
+                    "actors" : actors,
                 }
 
                 self.movie_file.close()
@@ -294,5 +300,5 @@ class Data:
 if __name__ == "__main__":
     obj = Data()
 
-    actor_data = obj.get_actor_data_file("chris evans")
+    actor_data = obj.get_single_movie_data_file("the shawshank redemption")
     print(actor_data)
