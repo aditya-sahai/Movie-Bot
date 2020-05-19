@@ -183,6 +183,8 @@ class Data:
         google_soup = BeautifulSoup(google_response.content, "html.parser")
 
         link = google_soup.find("div", {"class" : "r"}).a["href"]
+        google_found_name = google_soup.find("h3", {"class" : "LC20lb DKV0Md"}).get_text().split("(")[0].strip()
+        print(f"\nShowing results for {google_found_name}.")
 
         data = self.get_single_movie_data_url(link)
 
