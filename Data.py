@@ -165,7 +165,7 @@ class Data:
         self.movie_file = open(self.MOVIE_FILE_NAME, "w")
         self.movie_file.write("Movie,Summary,Rating,Genre,Duration,Age-Approriate,Rlease-Date,Director,Writers,Actors:Characters\n")
 
-        for num, movie in enumerate(movie_rows[:10]):
+        for num, movie in enumerate(movie_rows):
             url = f'https://www.imdb.com{movie.find("td", {"class" : "titleColumn"}).a["href"].split("?")[0]}'
             data = self.get_single_movie_data_url(url)
 
@@ -182,17 +182,29 @@ class Data:
         google_response = requests.get(url, headers=Data.headers)
         google_soup = BeautifulSoup(google_response.content, "html.parser")
 
-        link = google_soup.find("div", {"class" : "r"}).a["href"]
-        google_found_name = google_soup.find("h3", {"class" : "LC20lb DKV0Md"}).get_text().split("(")[0].strip()
-        print(f"\nObtaining results for {google_found_name}.")
+        try:
+            link = google_soup.find("div", {"class" : "r"}).a["href"]
 
-        data = self.get_single_movie_data_url(link)
+        except AttributeError:
+            return None
 
-        self.movie_file = open(self.MOVIE_FILE_NAME, "a")
-        self.write_single_movie_data(data)
-        self.movie_file.close()
+        else:
+            google_soup.find("cite", {"class" : "iUh30 bc tjvcx"}).span.decompose()
+            site_link = google_soup.find("cite", {"class" : "iUh30 bc tjvcx"}).get_text().strip().lower()
 
-        return data
+            if site_link != "www.imdb.com":
+                return None
+
+            google_found_name = google_soup.find("h3", {"class" : "LC20lb DKV0Md"}).get_text().split("(")[0].strip()
+            print(f"\nObtaining results for {google_found_name}.")
+
+            data = self.get_single_movie_data_url(link)
+
+            self.movie_file = open(self.MOVIE_FILE_NAME, "a")
+            self.write_single_movie_data(data)
+            self.movie_file.close()
+
+            return data
 
     def get_actor_data_name(self, actor_name):
         """Returns dictionary containing actor data from a name."""
@@ -202,47 +214,58 @@ class Data:
         google_response = requests.get(url, headers=Data.headers)
         google_soup = BeautifulSoup(google_response.content, "html.parser")
 
-        link = google_soup.find("div", {"class" : "r"}).a["href"]
-        google_found_name = google_soup.find("div", {"class" : "r"}).find("h3", {"class" : "LC20lb DKV0Md"}).get_text().split("-")[0].strip()
+        try:
+            link = google_soup.find("div", {"class" : "r"}).a["href"]
+            google_found_name = google_soup.find("div", {"class" : "r"}).find("h3", {"class" : "LC20lb DKV0Md"}).get_text().split("-")[0].strip()
 
-        print(f"\nObtaining results for {google_found_name}.")
+        except AttributeError:
+            return None
 
-        imdb_response = requests.get(link, headers=Data.headers)
-        imdb_soup = BeautifulSoup(imdb_response.content, "html.parser")
+        else:
+            google_soup.find("cite", {"class" : "iUh30 bc tjvcx"}).span.decompose()
+            site_link = google_soup.find("cite", {"class" : "iUh30 bc tjvcx"}).get_text().strip().lower()
 
-        birthdate = imdb_soup.find("time").get_text().replace("\n", "").split(",")
-        birthdate = f"{birthdate[0].strip()}, {birthdate[1].strip()}"
+            if site_link != "www.imdb.com":
+                return None
 
-        birthplace = imdb_soup.find("div", {"id" : "name-born-info"}).find_all("a")[-1].get_text().strip()
+            print(f"\nObtaining results for {google_found_name}.")
 
-        famous_movies = imdb_soup.find_all("div", {"class" : "knownfor-title"})
+            imdb_response = requests.get(link, headers=Data.headers)
+            imdb_soup = BeautifulSoup(imdb_response.content, "html.parser")
 
-        for index, movie in enumerate(famous_movies):
-            movie_name = movie.find("div", {"class" : "knownfor-title-role"}).a.get_text().strip()
-            character_played = movie.find("span", {"class" : "knownfor-ellipsis"}).get_text().strip()
+            birthdate = imdb_soup.find("time").get_text().replace("\n", "").split(",")
+            birthdate = f"{birthdate[0].strip()}, {birthdate[1].strip()}"
 
-            famous_movies[index] = (movie_name, character_played)
+            birthplace = imdb_soup.find("div", {"id" : "name-born-info"}).find_all("a")[-1].get_text().strip()
 
-        movies_table = imdb_soup.find("div", {"class" : "filmo-category-section"})
-        movie_table_rows = movies_table.find_all("div")
+            famous_movies = imdb_soup.find_all("div", {"class" : "knownfor-title"})
 
-        movie_data = []
+            for index, movie in enumerate(famous_movies):
+                movie_name = movie.find("div", {"class" : "knownfor-title-role"}).a.get_text().strip()
+                character_played = movie.find("span", {"class" : "knownfor-ellipsis"}).get_text().strip()
 
-        for index, movie_row in enumerate(movie_table_rows):
+                famous_movies[index] = (movie_name, character_played)
 
-            if movie_row.get("id") and not movie_row.get("style"):
-                movie = movie_row.b.a.get_text().strip()
-                movie_data.append(movie)
+            movies_table = imdb_soup.find("div", {"class" : "filmo-category-section"})
+            movie_table_rows = movies_table.find_all("div")
 
-        data_dict = {
-            "name" : actor_name.title(),
-            "birthdate" : birthdate,
-            "birthplace" : birthplace,
-            "famous-movies/series" : famous_movies,
-            "all-movies/series" : movie_data,
-        }
+            movie_data = []
 
-        return data_dict
+            for index, movie_row in enumerate(movie_table_rows):
+
+                if movie_row.get("id") and not movie_row.get("style"):
+                    movie = movie_row.b.a.get_text().strip()
+                    movie_data.append(movie)
+
+            data_dict = {
+                "name" : actor_name.title(),
+                "birthdate" : birthdate,
+                "birthplace" : birthplace,
+                "famous-movies/series" : famous_movies,
+                "all-movies/series" : movie_data,
+            }
+
+            return data_dict
 
     def get_actor_data_file(self, actor_name):
         """Returns data if found else returns None."""
@@ -305,5 +328,4 @@ class Data:
 if __name__ == "__main__":
     obj = Data()
 
-    actor_data = obj.get_single_movie_data_file("the shawshank redemption")
-    print(actor_data)
+    obj.write_top_250_movies_data()

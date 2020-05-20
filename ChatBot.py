@@ -79,8 +79,7 @@ class ChatBot(Data):
                         self.show_movie_req_data(movie_data, req_data)
 
                     else:
-                        # when the movie does not exist
-                        pass
+                        print(f"\nUnable to find a movie called '{movie}'.")
 
         elif category == "actor":
 
@@ -109,8 +108,9 @@ class ChatBot(Data):
                     self.write_new_actor_data(actor_data)
 
                 else:
-                    # when the actor does not exist
-                    pass
+                    print(f"\nUnable to find an actor called '{actor}'.")
 
         else:
-            pass
+            print("\nCould not understand.")
+            print("Please try again.")
+            self.chat()
