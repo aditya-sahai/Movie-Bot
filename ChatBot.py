@@ -93,7 +93,7 @@ class ChatBot(Data):
             if actor_data:
                 req_data = input("\nWhat are you looking for?(Birthdate, Birthplace, Famous-Movies/Series, All-Movies/Series)\n>>>").lower().strip()
 
-                if category == "q":
+                if req_data == "q":
                     sys.exit()
 
                 self.show_actor_req_data(actor_data, req_data)

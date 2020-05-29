@@ -1,0 +1,20 @@
+1)    Hello my name is Aditya, I am learning python and AI at the Robogenius Academy. In this video, I am going to demonstrate how my project "Movie ChatBot" works.
+
+2)    Movie ChatBot is a program that helps user to get the information about any movie/actor.
+
+3)    This project involves the usage of web scraping and file handling which is done using
+      Python.
+
+4)    ChatBot searches the desired information on google and scrapes the results returned and neatly displays it to the user. It also stores the result in a csv file to make the same search faster
+
+4)    Now let's take a look at the working model of the chatbot.
+          ChatBot first asks us for the category that is movie/actor.
+	  If we enter movie as category it would then ask us for the movie name.
+	  After entering the movie name it would obtain the data from either the
+	  file or scrape it from google. Then it would ask us for required data.
+	  After entering the required data it would then present the data neatly.
+
+5)    Now let's try the actor category.
+	  It first asks us for the actor name.
+	  It performs the same process for obtaining the data. Now it would ask us
+	   the required data and then present it neatly.
